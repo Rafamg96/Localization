@@ -1,0 +1,5 @@
+Fichero observation_data.txt contiene los datos obtenidos por el histograma de las subimagenes que obtienen los sensores en cada timestamp.
+
+Fichero position_data.txt contiene la posición y dirección del robot con respecto al centro de coordenadas del mundo en cada timestamp.
+
+Fichero velocity_data.txt contiene la velocidad angular y lineal del robot en cada timestamp.
