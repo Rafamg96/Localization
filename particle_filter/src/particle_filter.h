@@ -85,12 +85,11 @@ class ParticleFilter {
 	
 	// Number of particles to draw
 	int num_particles; 
-	
-	
-	
+
 	// Flag, if filter is initialized
 	bool is_initialized;
-	
+
+
 	// Vector of weights of all particles
 	std::vector<double> weights;
 	
@@ -102,6 +101,8 @@ public:
 	// Constructor
 	// @param M Number of particles
 	ParticleFilter() : num_particles(0), is_initialized(false) {}
+
+	
 
 	// Destructor
 	~ParticleFilter() {}
@@ -162,9 +163,7 @@ public:
 	/**
 	 * initialized Returns whether particle filter is initialized yet or not.
 	 */
-	const bool initialized() const {
-		return is_initialized;
-	}
+	bool initialized();
 };
 void callbackObtenerNubeMapeo(const sensor_msgs::PointCloud2& input);
 void callbackObtenerNubeSensor(const sensor_msgs::PointCloud2& input);
@@ -172,4 +171,6 @@ void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input);
 cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>nubesensor);
 cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>nubemapeo,float x, float y, float angle);
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
+float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
+float calcularpeso1(cv::Mat imagensensor,cv::Mat imagenparticula);
 #endif /* PARTICLE_FILTER_H_ */
