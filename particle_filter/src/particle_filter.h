@@ -127,15 +127,8 @@ public:
 	 * @param velocity Velocity of car from t to t+1 [m/s]
 	 * @param yaw_rate Yaw rate of car from t to t+1 [rad/s]
 	 */
-	void prediction(double delta_t, double std_pos[], double velocity, double yaw_rate);
+	void prediction(double diferenciax,double diferenciay,double diferenciatheta, double std_pos[]);
 	
-	/**
-	 * dataAssociation Finds which observations correspond to which landmarks (likely by using
-	 *   a nearest-neighbors data association).
-	 * @param predicted Vector of predicted landmark observations
-	 * @param observations Vector of landmark observations
-	 */
-	void dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations);
 	
 	/**
 	 * updateWeights Updates the weights for each particle based on the likelihood of the 
@@ -146,7 +139,7 @@ public:
 	 * @param observations Vector of landmark observations
 	 * @param map Map class containing map landmarks
 	 */
-	void updateWeights(pcl::PointCloud<pcl::PointXYZRGB> nubesmapeo, pcl::PointCloud<pcl::PointXYZRGB> nubesensor);
+	void updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr nubemapeo, pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor);
 	
 	/**
 	 * resample Resamples from the updated set of particles to form
@@ -158,7 +151,7 @@ public:
 	 * write Writes particle positions to a file.
 	 * @param filename File to write particle positions to.
 	 */
-	void write(std::string filename);
+	void write(std::string filename, float x,float y,float theta);
 	
 	/**
 	 * initialized Returns whether particle filter is initialized yet or not.
@@ -168,8 +161,8 @@ public:
 void callbackObtenerNubeMapeo(const sensor_msgs::PointCloud2& input);
 void callbackObtenerNubeSensor(const sensor_msgs::PointCloud2& input);
 void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input);
-cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>nubesensor);
-cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>nubemapeo,float x, float y, float angle);
+cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor);
+cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr nubemapeo,float x, float y, float angle);
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
 float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
 float calcularpeso1(cv::Mat imagensensor,cv::Mat imagenparticula);
