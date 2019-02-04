@@ -83,23 +83,22 @@ struct Particle {
 
 class ParticleFilter {
 	
-	// Number of particles to draw
+	// Número de particulas
 	int num_particles; 
 
-	// Flag, if filter is initialized
+	// Boleano para controlar si el filtro de particulas ha sido inicializado
 	bool is_initialized;
 
 
-	// Vector of weights of all particles
+	// Vector sobre los pesos de las particulas
 	std::vector<double> weights;
 	
 public:
 	
-	// Set of current particles
+	// Conjunto de particulas
 	std::vector<Particle> particles;
 
 	// Constructor
-	// @param M Number of particles
 	ParticleFilter() : num_particles(0), is_initialized(false) {}
 
 	
@@ -107,63 +106,21 @@ public:
 	// Destructor
 	~ParticleFilter() {}
 
-	/**
-	 * init Initializes particle filter by initializing particles to Gaussian
-	 *   distribution around first position and all the weights to 1.
-	 * @param x Initial x position [m] (simulated estimate from GPS)
-	 * @param y Initial y position [m]
-	 * @param theta Initial orientation [rad]
-	 * @param std[] Array of dimension 3 [standard deviation of x [m], standard deviation of y [m]
-	 *   standard deviation of yaw [rad]]
-	 */
+
 	void init(double x, double y, double theta, double std[]);
 
-	/**
-	 * prediction Predicts the state for the next time step
-	 *   using the process model.
-	 * @param delta_t Time between time step t and t+1 in measurements [s]
-	 * @param std_pos[] Array of dimension 3 [standard deviation of x [m], standard deviation of y [m]
-	 *   standard deviation of yaw [rad]]
-	 * @param velocity Velocity of car from t to t+1 [m/s]
-	 * @param yaw_rate Yaw rate of car from t to t+1 [rad/s]
-	 */
 	void prediction(double diferenciax,double diferenciay,double diferenciatheta, double std_pos[]);
-	
-	
-	/**
-	 * updateWeights Updates the weights for each particle based on the likelihood of the 
-	 *   observed measurements. 
-	 * @param sensor_range Range [m] of sensor
-	 * @param std_landmark[] Array of dimension 2 [standard deviation of range [m],
-	 *   standard deviation of bearing [rad]]
-	 * @param observations Vector of landmark observations
-	 * @param map Map class containing map landmarks
-	 */
 	void updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr nubemapeo, pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor);
-	
-	/**
-	 * resample Resamples from the updated set of particles to form
-	 *   the new set of particles.
-	 */
 	void resample();
-	
-	/*
-	 * write Writes particle positions to a file.
-	 * @param filename File to write particle positions to.
-	 */
 	void write(std::string filename, float x,float y,float theta);
-	
-	/**
-	 * initialized Returns whether particle filter is initialized yet or not.
-	 */
+	void writetiempo(std::string filename, float x);
 	bool initialized();
 };
 void callbackObtenerNubeMapeo(const sensor_msgs::PointCloud2& input);
 void callbackObtenerNubeSensor(const sensor_msgs::PointCloud2& input);
 void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input);
 cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor);
-cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr nubemapeo,float x, float y, float angle);
+cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle);
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
 float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
-float calcularpeso1(cv::Mat imagensensor,cv::Mat imagenparticula);
 #endif /* PARTICLE_FILTER_H_ */
