@@ -626,6 +626,7 @@ void obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubem
 	//cv::Mat imagen(60,90, CV_8UC3, cv::Scalar(0, 0,0));
 	ROS_INFO("Borrar proyectando imagen");
 	//Proyectamos la nube de puntos en la imagen recorriendo todos los puntos de la nube
+	//#pragma omp parallel for
 	for(int i=0;i<nubeparticula->size();i++){	
 		cv::Vec3b color;
 		//Obtenemos el color del pixel que tendría el punto en la nube de puntos
