@@ -141,6 +141,9 @@ set(LIBS ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
 add_executable(particle_filter src/particle_filter.cpp)
 target_link_libraries(particle_filter ${LIBS})
 
+add_executable(generarodometryconerror src/generarodometryconerror.cpp)
+target_link_libraries(generarodometryconerror ${LIBS})
+
 
 
 ## Declare a C++ library

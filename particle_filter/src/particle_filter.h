@@ -114,13 +114,18 @@ public:
 	void resample();
 	void write(std::string filename, float x,float y,float theta);
 	void writetiempo(std::string filename, float x);
+	void writeposicion(std::string filename, float posrealx,float posrealy,float posrealtheta,  float posodometriax,float posodometriay, float posodometriatheta, float pospfx,float pospfy, float pospftheta);
+
+	
 	bool initialized();
 };
+void callbackPosicionReal (const nav_msgs::Odometry input);
 void callbackObtenerNubeMapeo(const sensor_msgs::PointCloud2& input);
 void callbackObtenerNubeSensor(const sensor_msgs::PointCloud2& input);
 void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input);
 cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor);
-cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle);
+//cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle);
+void obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle, cv::Mat &imagen);
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
 float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
 #endif /* PARTICLE_FILTER_H_ */
