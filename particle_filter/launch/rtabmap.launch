@@ -36,7 +36,7 @@
          <param name="Kp/WordsPerImage" type="string" value="-1"/>
          <param name="Kp/DetectorStrategy" type="string" value="0"/>   <!-- use SURF -->
          <param name="Kp/NNStrategy" type="string" value="1"/>         <!-- kdTree -->
-	 <param name="Grid/CellSize" type="string" value="0.01"/> <!-- 1 cm voxel -->
+	 <param name="Grid/CellSize" type="string" value="0.04"/> <!-- 1 cm voxel -->
          <param name="SURF/HessianThreshold" type="string" value="1000"/>
 
          <param name="Vis/MinInliers" type="string" value="10"/>

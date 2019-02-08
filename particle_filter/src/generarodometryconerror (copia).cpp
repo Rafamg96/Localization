@@ -3,6 +3,7 @@
 
 #include <tf/transform_datatypes.h>
 #include <tf2/LinearMath/Quaternion.h>
+
 //Definimos el publisher
 ros::Publisher pubodometryfalsa;
 
@@ -16,54 +17,39 @@ float errortotaltheta=0;
 
 float erroralmoverse=0.0012;//0.08 m/s
 float erroralrotar=0.0014; //6º/s
-
-
+nav_msgs::Odometry inputanterior;
+nav_msgs::Odometry odometriafalsa;
+bool primeravez=true;
 void callbackOdom (const nav_msgs::Odometry input){
 	//Objeto que almacena la odometria modificada
 	nav_msgs::Odometry odometriafalsa; 
 	//Copiamos la posición real del robot 
-	odometriafalsa=input;
-	//Aumentamos el error si el robot esta moviendose con velocidad lineal positiva en el eje x
-	if(input.twist.twist.linear.x>0.02){
-		//Obtenemos el ángulo de la posición real del robot para modificar x e y dependiendo de este
-		float angulo=tf::getYaw(input.pose.pose.orientation);
-		angulo+=errortotaltheta;
-		//Aumentamos el error acumulado de las dos dimensiones
-		errortotalx+=(erroralmoverse*cos(angulo));
-		errortotaly+=(erroralmoverse*sin(angulo));	
+	if (primeravez){
+		odometriafalsa=input;
+		primeravez=false;
+		inputanterior=input;
 	}
+	//Calculamos la diferencia entre la anterior posición y la actual
+	float diferencialineal=abs(input.pose.pose.position.x-inputanterior.pose.pose.position.x)+abs(input.pose.pose.position.y-inputanterior.pose.pose.position.y);
+	float diferenciaangular=tf::getYaw(input.pose.pose.orientation)-tf::getYaw(inputanterior.pose.pose.orientation);
+	diferenciaangular=fmod(diferenciaangular,M_PI);
 
-	//Aumentamos el error si el robot esta moviendose con velocidad lineal negativa en el eje x
-	if(input.twist.twist.linear.x<-0.02){
-		//Obtenemos el ángulo de la posición real del robot para modificar x e y dependiendo de este
-		float angulo=tf::getYaw(input.pose.pose.orientation);
-		angulo+=errortotaltheta;
-		//Aumentamos el error acumulado de las dos dimensiones
-		errortotalx-=(erroralmoverse*cos(angulo));
-		errortotaly-=(erroralmoverse*sin(angulo));	
-	}
 
-	//Aumentamos el error en la rotación en caso de que este rote en sentido antihorario
-	if(input.twist.twist.angular.z>0.02){
-		errortotaltheta+=erroralrotar;
-	}
-	
-	//Aumentamos el error en la rotación en caso de que este rote en sentido horario
-	if(input.twist.twist.angular.z<-0.02){
-		errortotaltheta-=erroralrotar;
-	}
-
-	//Añadimos el error acumulado a la posición del robot real
-	odometriafalsa.pose.pose.position.x=input.pose.pose.position.x+errortotalx; //Calculamos el valor de la odometria en el eje x
-	odometriafalsa.pose.pose.position.y=input.pose.pose.position.y+errortotaly; //Calculamos el valor de la odometria en el eje y
-	
 	//Definimos un quaternion donde le metemos como yaw la rotación de la posición real + el error
-	tf2::Quaternion myQuaternion;
-	myQuaternion.setRPY( 0, 0, tf::getYaw(input.pose.pose.orientation)+errortotaltheta); 
-	odometriafalsa.pose.pose.orientation.x=myQuaternion[0];	
+	tf::Quaternion myQuaternion;
+	//tf::getYaw(odometriafalsa.pose.pose.orientation)+diferenciaangular
+	myQuaternion =tf::createQuaternionFromRPY(0, 0,tf::getYaw(input.pose.pose.orientation));
+	myQuaternion.setRPY( 0, 0, tf::getYaw(input.pose.pose.orientation)); 
+	myQuaternion.normalize();
+	odometriafalsa.pose.pose.orientation.x=myQuaternion[0];
 	odometriafalsa.pose.pose.orientation.y=myQuaternion[1];
 	odometriafalsa.pose.pose.orientation.z=myQuaternion[2];
 	odometriafalsa.pose.pose.orientation.w=myQuaternion[3];
+
+
+	odometriafalsa.pose.pose.position.x+=diferencialineal*cos(tf::getYaw(odometriafalsa.pose.pose.orientation))*1.1;
+	odometriafalsa.pose.pose.position.y+=diferencialineal*sin(tf::getYaw(odometriafalsa.pose.pose.orientation))*1.1;
+
 
 	//Publicamos la odometria con error
 	pubodometryfalsa.publish(odometriafalsa);

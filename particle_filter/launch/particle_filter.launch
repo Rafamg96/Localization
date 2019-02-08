@@ -4,11 +4,10 @@
 	</node>
 	
 	<!--Ejecutamos el nodo que pública la nube de puntos del mapeo--> 
-	<node name="pcd_to_pointcloud" pkg="pcl_ros" type="pcd_to_pointcloud" output="screen" args="/home/rafael/catkin_ws/pcd/prueba2.pcd 0.1">
+	<node name="pcd_to_pointcloud" pkg="pcl_ros" type="pcd_to_pointcloud" output="screen" args="/home/rafael/catkin_ws/pcd/mapeado04.pcd 0.1">
 		<param name="frame_id" type="string" value="/odom"/>
 	</node>
 	
-	rosrun pcl_ros pcd_to_pointcloud /home/rafael/catkin_ws/pcd/prueba2.pcd 0.1 _frame_id:=/odom
 
 
 	<!--Ejecutamos el nodo del particle filter-->   	

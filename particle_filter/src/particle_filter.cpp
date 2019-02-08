@@ -135,8 +135,13 @@ void ParticleFilter::prediction(double diferenciax,double diferenciay,double dif
 	    for(int i=0; i<num_particles; i++){
 
 		// Predecimos la posición basandonos en la diferencia de odometrias
-		double new_x = particles[i].x + diferenciax;
-		double new_y = particles[i].y + diferenciay;
+		//Calculamos el movimiento lineal que se realiza
+		double m_lineal=abs(diferenciax)+abs(diferenciay);
+		//if((diferenciax<0 && -M_PI/2<particle[i].theta<M_PI/2)||(diferenciax>0 && particle[i].theta<M_PI/2)){}
+		//Añadimos ese movimiento lineal dependiendo del ángulo de la partícula
+		double new_x=particles[i].x+m_lineal*cos(particles[i].theta);
+		double new_y=particles[i].y+m_lineal*sin(particles[i].theta);//Restamos debido a que el eje y tiene la parte negativa en orden inverso
+		//Calculamos el movimiento angular que se realiza
 		double new_theta = particles[i].theta + diferenciatheta;
 		
 		//Calculamos el ruido gaussiano que añadiremos a la predición para que los resamples no utilicen siempre la misma particula
@@ -155,15 +160,15 @@ void ParticleFilter::prediction(double diferenciax,double diferenciay,double dif
     }
 }
 //Actualiza los pesos de las particulas mediante la nube de puntos obtenida al mapear y la nube obtenida por el sensor.
-void ParticleFilter::updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr nubemapeo, pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor) {
+void ParticleFilter::updateWeights() {
 	//Sumatorio de pesos para luego normalizar
     double weights_sum = 0;
     //Float para almacenar la similitud entre particula y lo que obtiene el sensor
     double coincidencia=0;
 	//Obtenemos la imagen de nubesensor
 	float startobtenerimagensensor= clock();
-	ROS_INFO("BORRAR OBTENERIMAGENSENSOR");
-	cv::Mat imagensensor=obtenerImagenSensor(nubesensor);
+	cv::Mat imagensensor (60,90, CV_8UC3, cv::Scalar(0, 0,0));
+	obtenerImagenSensor(imagensensor);
 	float stopobtenerimagensensor= clock();
 	ROS_INFO("\nTiempo que se tarda en calcular la imagen del sensor: %f\n",(stopobtenerimagensensor-startobtenerimagensensor)/double (CLOCKS_PER_SEC));
 	pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoimagensensor.csv",(stopobtenerimagensensor-startobtenerimagensensor)/double (CLOCKS_PER_SEC));
@@ -173,10 +178,8 @@ void ParticleFilter::updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr n
 		//Tiempo que tarda en obtener la imagen desde una particula
 		float startobtenerimagenparticula= clock();
 		//Obtenemos la imagen de la particula
-		ROS_INFO("BORRAR OBTENERIMAGENPARTICULA");
-		//cv::Mat imagenparticula=obtenerImagenParticula(nubemapeo,particles[j].x,particles[j].y,particles[j].theta);
 		cv::Mat imagenparticula (60,90, CV_8UC3, cv::Scalar(0, 0,0));
-		obtenerImagenParticula(nubemapeo,particles[j].x,particles[j].y,particles[j].theta, imagenparticula);
+		obtenerImagenParticula(particles[j].x,particles[j].y,particles[j].theta, imagenparticula);
 		float stopobtenerimagenparticula=clock();
 		ROS_INFO("\nTiempo que se tarda en calcular la imagen de la particula: %f\n",(stopobtenerimagenparticula-startobtenerimagenparticula)/double (CLOCKS_PER_SEC));
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoimagenparticula.csv",(stopobtenerimagenparticula-startobtenerimagenparticula)/double (CLOCKS_PER_SEC));
@@ -185,7 +188,6 @@ void ParticleFilter::updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr n
 		//Tiempo que tarda en calcular el peso de la imagen
 		//coincidencia=registrarImagen(imagensensor,imagenparticula);
 		float startcalcularcoincidencia=clock();
-		ROS_INFO("HISTOGRAMAIMAGEN");
 		coincidencia=histogramaImagen(imagensensor,imagenparticula);
 		float stopcalcularcoincidencia=clock();
 		ROS_INFO("\nTiempo que se tarda en calcular el índice de coincidencia de la particula: %f\n",(stopcalcularcoincidencia-startcalcularcoincidencia)/double (CLOCKS_PER_SEC));
@@ -197,7 +199,6 @@ void ParticleFilter::updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr n
 		//Calculamos cual sería el mayor error entre lo que nos dicen los sensores y lo que podríamos tener en las particulas.
 		weights_sum += coincidencia;
 		particles[j].weight = coincidencia;
-		ROS_INFO("BORRAR BUCLETERMINADO");
     }
 
 	//Definimos el peso máximo y la mejor particula para luego publicarla
@@ -244,7 +245,7 @@ void ParticleFilter::updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr n
 	//Obtenemos la imagen que ve la mejor particula para publicarla
 	//cv::Mat imagenmejorparticula=obtenerImagenParticula(nubemapeo,best_particle.x,best_particle.y,best_particle.theta);
 	cv::Mat imagenmejorparticula(60,90, CV_8UC3, cv::Scalar(0, 0,0));
-	obtenerImagenParticula(nubemapeo,best_particle.x,best_particle.y,best_particle.theta, imagenmejorparticula);
+	obtenerImagenParticula(best_particle.x,best_particle.y,best_particle.theta, imagenmejorparticula);
 
 	cv_bridge::CvImage out_msg;
 	out_msg.header.seq = 1; // user defined counter
@@ -318,8 +319,6 @@ void ParticleFilter::writetiempo(std::string filename, float x) {
 	dataFile.close();
 }
 
-
-
 //Método que devuelve si el filtro de partículas ha sido inicializado
 bool ParticleFilter::initialized() {
 		return is_initialized;
@@ -330,7 +329,7 @@ void general(){
 
 	double sigma_pos [3] = {3, 3, 0.25}; // Varianzas en la distribucción normal del GPS [x [m], y [m], theta [rad]]
 	//Error de 9m en x, y y 42º
-	double ruidoparticulas[3]={0.3,0.3,0.1}; //17 grados de diferencia, 1 metro de diferencia en x e y.
+	double ruidoparticulas[3]={0.3,0.3,0.25}; //17 grados de diferencia=0.1, 1 metro de diferencia en x e y.
 	//double sigma_pos [3] = {0, 0, 0}; 
 	//double ruidoparticulas[3]={0,0,0}; 
 	
@@ -407,9 +406,8 @@ void general(){
     //pubparticulas.publish(particulas); 
 
 	// Se actualizan los pesos y se realiza el resample añadiendo ruido
-	//Aqui no se si nubesensor esta actualizada, porque ha pasado un tiempo ARREGLAR
 	float startactualizacionpesos=clock();
-	pf.updateWeights(cloud, nubesensor);
+	pf.updateWeights();
 	float stopactualizacionpesos=clock();
 	ROS_INFO("\nTiempo que se tarda en realizar la actualizacion de pesos: %f\n",(stopactualizacionpesos-startactualizacionpesos)/double (CLOCKS_PER_SEC));
 	pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoactualizacionpesos.csv",(stopactualizacionpesos-startactualizacionpesos)/double (CLOCKS_PER_SEC));
@@ -474,10 +472,10 @@ int main(int argc, char **argv){
 	gen.seed(8);
 
 	//Obtenemos la nube de puntos del mapeo desde el archivo pcd
-	pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/home/rafael/catkin_ws/pcd/prueba2.pcd", *cloud);
-
+	pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/home/rafael/catkin_ws/pcd/mapeado04.pcd", *cloud);
 	
 	//Obtenemos la posicion del robot dada por la odometria
+	//subscriberodom = n.subscribe("odometriafalsa",1,callbackobtenerPosicionyVelocidad);
 	subscriberodom = n.subscribe("odometriafalsa",1,callbackobtenerPosicionyVelocidad);
 
 	//Obtenemos la posición real del robot	
@@ -544,7 +542,7 @@ void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input){
 
 }
 //Proyecta la nube de puntos del sensor en una matriz y la devuelve
-cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_nubesensor){
+void obtenerImagenSensor(cv::Mat &imagen){
 	//Definimos una estructura para almacenar la nube de puntos filtrada
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr bodyFiltered (new pcl::PointCloud<pcl::PointXYZRGB>);
 
@@ -552,15 +550,12 @@ cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_nubesensor
 	pcl::CropBox<pcl::PointXYZRGB> boxFilter;
 	boxFilter.setMin(Eigen::Vector4f(-3, -1, 1, 1.0));
 	boxFilter.setMax(Eigen::Vector4f(3,1, 5, 1.0));
-	boxFilter.setInputCloud(in_nubesensor);
+	boxFilter.setInputCloud(nubesensor);
 	boxFilter.filter(*bodyFiltered);
 
 	//Ahora pasaremos a proyectar esta nube de puntos en una imagen
 
 	//Utilizamos CV_8UC3 Definiendo que el color utiliza un uint_8 y se usan 3 canales para pintar la imagen. Scalar indica el valor por defecto de toda la imágen
-
-	//cv::Mat imagen(100,150, CV_8UC3, cv::Scalar(0, 0,0));
-	cv::Mat imagen(60,90, CV_8UC3, cv::Scalar(0, 0,0));
 	//Proyectamos la nube de puntos en la imagen recorriendo todos los puntos de la nube
 	for(int i=0;i<bodyFiltered->size();i++){	
 		cv::Vec3b color;
@@ -577,20 +572,17 @@ cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_nubesensor
 	out_msg.encoding = sensor_msgs::image_encodings::RGB8; // AÑadimos el tipo de encoding
 	out_msg.image    = imagen; // Añadimos la matriz
 	pubsensor.publish(out_msg.toImageMsg());
-
-	//Una vez que tenemos la matriz con la imagen la devolvemos.
-	return imagen;
 }
 //Proyecta la nube dye puntos que vería la particula en la posición x y con ángulo theta en una matriz y la devuelve
 //cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle){
-void obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle, cv::Mat &imagen){
+void obtenerImagenParticula(float x, float y, float angle, cv::Mat &imagen){
 	//Para no realizar transformaciones a toda la nube de puntos nos quedamos con una zona que rode a la posición del robot 5 m por cada lado ya que es lo máximo que ve en profundidad
 	//Recortamos la parte sobrante de la nube de puntos y la almacenamos en bodyFiltered
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr bodyFiltered (new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::CropBox<pcl::PointXYZRGB> boxFilter;
-	boxFilter.setMin(Eigen::Vector4f(-5, -5, -1, 1.0));
-	boxFilter.setMax(Eigen::Vector4f(5,5, 1, 1.0));
-	boxFilter.setInputCloud(in_nubemapeo); 
+	boxFilter.setMin(Eigen::Vector4f(-6+x, -6+y, -1, 1.0));
+	boxFilter.setMax(Eigen::Vector4f(6+x,6+y, 1, 1.0));
+	boxFilter.setInputCloud(cloud); 
 	boxFilter.filter(*bodyFiltered);
 
 	//Primero debemos aplicar a la nube de puntos una matriz de traslación y rotación para dejar en el origen de coordenadas el punto más cercano y que este más a la izquierda
@@ -624,7 +616,6 @@ void obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubem
 
 	//Utilizamos CV_8UC3 Definiendo que el color utiliza un uint_8 y se usan 3 canales para pintar la imagen. Scalar indica el valor por defecto de toda la imágen
 	//cv::Mat imagen(60,90, CV_8UC3, cv::Scalar(0, 0,0));
-	ROS_INFO("Borrar proyectando imagen");
 	//Proyectamos la nube de puntos en la imagen recorriendo todos los puntos de la nube
 	//#pragma omp parallel for
 	for(int i=0;i<nubeparticula->size();i++){	
@@ -747,7 +738,6 @@ float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
 
 //Método para calcular el peso de las particulas basandonos en el histograma
 float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
-	ROS_INFO("BORRAR HISTOGRAMAIMAGEN");
 	//Definimos el número de subimagenes que vamos a realizar por fila o columna
 	int numerosubimagenes=4; //Tendriamos numerosubimagenes*numerosubimagenes =100
 	//Creamos un vector que definirá la distancia entre las subimagenes de imagen sensor e imagen particula
@@ -763,7 +753,6 @@ float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
 	float valormedioB=0;
 
 	//Recorremos las subimágenes
-	ROS_INFO("Borrar RECORREMOSSUBIMAGENES");
 	for(int i=0;i<numerosubimagenes;i++){
 		for(int j=0;j<numerosubimagenes;j++){
 			//Declaramos una variable para almacenar el valor acumulado de cada uno de los canales, BGR para imagensensor
@@ -773,7 +762,6 @@ float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
 			//Calculamos el valor acumulado en cada canal de la imagensensor
 			for(int h=altura*i;h<altura*(i+1);h++){
 				for(int w=anchura*j;w<anchura*(j+1);w++){
-					//ROS_INFO("Borrar FOR2");
 					//Solamente se suma al valor acumulado si la imagen sensor no tiene ese pixel en negro
 					if((int)imagensensor.at<Vec3b>(h,w)[0]!=0 && (int)imagensensor.at<Vec3b>(h,w)[1]!=0 && (int)imagensensor.at<Vec3b>(h,w)[2]!=0){
 						valor[0]=valor[0]+(int)imagensensor.at<Vec3b>(h,w)[0]; //B
@@ -811,6 +799,7 @@ float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
 	ROS_INFO("Coincidencia PREFORMULA: %f", valor);
 	
 	return  pow(3, 3/(valor/100));//Formula para 2x2
+	return -5*valor+5000;
 	//return pow(3,(1/(valor/100)));
 	//return  pow(3, 3/(valor/1000));//Formula para 4x4
 

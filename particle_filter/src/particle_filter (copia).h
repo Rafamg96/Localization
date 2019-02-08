@@ -110,7 +110,7 @@ public:
 	void init(double x, double y, double theta, double std[]);
 
 	void prediction(double diferenciax,double diferenciay,double diferenciatheta, double std_pos[]);
-	void updateWeights();
+	void updateWeights(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr nubemapeo, pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor);
 	void resample();
 	void write(std::string filename, float x,float y,float theta);
 	void writetiempo(std::string filename, float x);
@@ -123,8 +123,9 @@ void callbackPosicionReal (const nav_msgs::Odometry input);
 void callbackObtenerNubeMapeo(const sensor_msgs::PointCloud2& input);
 void callbackObtenerNubeSensor(const sensor_msgs::PointCloud2& input);
 void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input);
-void obtenerImagenSensor(cv::Mat &imagen);
-void obtenerImagenParticula(float x, float y, float angle, cv::Mat &imagen);
+cv::Mat obtenerImagenSensor(pcl::PointCloud<pcl::PointXYZRGB>::Ptr nubesensor);
+//cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle);
+void obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle, cv::Mat &imagen);
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
 float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula);
 #endif /* PARTICLE_FILTER_H_ */
