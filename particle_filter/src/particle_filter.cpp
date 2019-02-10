@@ -472,7 +472,7 @@ int main(int argc, char **argv){
 	gen.seed(8);
 
 	//Obtenemos la nube de puntos del mapeo desde el archivo pcd
-	pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/home/rafael/catkin_ws/pcd/mapeado04.pcd", *cloud);
+	pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/home/rafael/catkin_ws/src/particle_filter/pcd/mapeado04.pcd", *cloud);
 	
 	//Obtenemos la posicion del robot dada por la odometria
 	//subscriberodom = n.subscribe("odometriafalsa",1,callbackobtenerPosicionyVelocidad);
