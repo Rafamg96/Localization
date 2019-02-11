@@ -122,7 +122,7 @@ public:
 void callbackPosicionReal (const nav_msgs::Odometry input);
 void callbackObtenerNubeMapeo(const sensor_msgs::PointCloud2& input);
 void callbackObtenerNubeSensor(const sensor_msgs::PointCloud2& input);
-void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input);
+void callbackobtenererrorenodom (const nav_msgs::Odometry input);
 void obtenerImagenSensor(cv::Mat &imagen);
 void obtenerImagenParticula(float x, float y, float angle, cv::Mat &imagen);
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula);

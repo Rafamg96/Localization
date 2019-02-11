@@ -59,9 +59,9 @@ float stop2;
 bool nubesensorleida=false;
 
 //Para almacenar lo obtenido por la odometria
-float posicionx=0;
-float posiciony=0;
-float posiciontheta=0;
+float errorenx=0;
+float erroreny=0;
+float errorentheta=0;
 
 float posicionanteriorx=0;
 float posicionanteriory=0;
@@ -98,7 +98,7 @@ using namespace std;
 
 //Inicializa el filtro de particulas con la posición x,y,theta y añade un error std[]
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
-    num_particles = numeroparticulas; //set to number of files in observation directory
+    num_particles = numeroparticulas; 
 
     weights.resize(num_particles);
     particles.resize(num_particles);
@@ -121,23 +121,20 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
         p.id = i;
         p.x = genx+x; 
         p.y = geny+y;
-        p.theta = gentheta+theta; //+1 0.021061; Todo 0 0.071869;
+        p.theta = gentheta+theta; 
         p.weight = 1;
 
         particles[i] = p;
         weights[i] = p.weight;
-		//1ROS_INFO("\n Inicializacion del filtro de particulas \n Particula %d -> x=%f y=%f theta=%f \n",i,p.x,p.y,p.theta);
     }
 	is_initialized = true;
 }
 //Predice la posición de las particulas aplicando a estas la diferencia entre la posición anterior y actual y añade ruido std_pos[]
 void ParticleFilter::prediction(double diferenciax,double diferenciay,double diferenciatheta, double std_pos[]){
-	    for(int i=0; i<num_particles; i++){
-
+	for(int i=0; i<num_particles; i++){
 		// Predecimos la posición basandonos en la diferencia de odometrias
 		//Calculamos el movimiento lineal que se realiza
 		double m_lineal=abs(diferenciax)+abs(diferenciay);
-		//if((diferenciax<0 && -M_PI/2<particle[i].theta<M_PI/2)||(diferenciax>0 && particle[i].theta<M_PI/2)){}
 		//Añadimos ese movimiento lineal dependiendo del ángulo de la partícula
 		double new_x=particles[i].x+m_lineal*cos(particles[i].theta);
 		double new_y=particles[i].y+m_lineal*sin(particles[i].theta);//Restamos debido a que el eje y tiene la parte negativa en orden inverso
@@ -154,8 +151,6 @@ void ParticleFilter::prediction(double diferenciax,double diferenciay,double dif
 		particles[i].x=dist_x(gen);
 		particles[i].y=dist_y(gen);
 		particles[i].theta=dist_theta(gen);
-
-		//1ROS_INFO("\n Prediccion del filtro de particulas \n Particula %d -> x=%f y=%f theta=%f \n",i,p->x,p->y,p->theta);
    
     }
 }
@@ -170,7 +165,6 @@ void ParticleFilter::updateWeights() {
 	cv::Mat imagensensor (60,90, CV_8UC3, cv::Scalar(0, 0,0));
 	obtenerImagenSensor(imagensensor);
 	float stopobtenerimagensensor= clock();
-	ROS_INFO("\nTiempo que se tarda en calcular la imagen del sensor: %f\n",(stopobtenerimagensensor-startobtenerimagensensor)/double (CLOCKS_PER_SEC));
 	pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoimagensensor.csv",(stopobtenerimagensensor-startobtenerimagensensor)/double (CLOCKS_PER_SEC));
 		
 	//Para cada particula
@@ -181,7 +175,6 @@ void ParticleFilter::updateWeights() {
 		cv::Mat imagenparticula (60,90, CV_8UC3, cv::Scalar(0, 0,0));
 		obtenerImagenParticula(particles[j].x,particles[j].y,particles[j].theta, imagenparticula);
 		float stopobtenerimagenparticula=clock();
-		ROS_INFO("\nTiempo que se tarda en calcular la imagen de la particula: %f\n",(stopobtenerimagenparticula-startobtenerimagenparticula)/double (CLOCKS_PER_SEC));
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoimagenparticula.csv",(stopobtenerimagenparticula-startobtenerimagenparticula)/double (CLOCKS_PER_SEC));
 	
 		//Calculamos cual es el peso correspondiente a la particula
@@ -190,12 +183,8 @@ void ParticleFilter::updateWeights() {
 		float startcalcularcoincidencia=clock();
 		coincidencia=histogramaImagen(imagensensor,imagenparticula);
 		float stopcalcularcoincidencia=clock();
-		ROS_INFO("\nTiempo que se tarda en calcular el índice de coincidencia de la particula: %f\n",(stopcalcularcoincidencia-startcalcularcoincidencia)/double (CLOCKS_PER_SEC));
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempocoincidenciaparticula.csv",(stopcalcularcoincidencia-startcalcularcoincidencia)/double (CLOCKS_PER_SEC));
 	
-
-		//cambiar esto para cambiar el método de peso
-		ROS_INFO("Coincidencia particula POSTFORMULA %d: %f",j,coincidencia); 
 		//Calculamos cual sería el mayor error entre lo que nos dicen los sensores y lo que podríamos tener en las particulas.
 		weights_sum += coincidencia;
 		particles[j].weight = coincidencia;
@@ -217,7 +206,6 @@ void ParticleFilter::updateWeights() {
 			best_particle = particles[i];
 			indicemejor=i;
 		}
-		//ROS_INFO("\nCoincidencia Particula normalizada \nPeso particula %d : %f\n",i,p->weight);
     }
 
 	//Publicamos la particula con mayor peso
@@ -227,7 +215,7 @@ void ParticleFilter::updateWeights() {
     particulas.header.stamp = ros::Time::now();
 	
 	//Almacenamos la posición actual del robot junto con la posición dada por el filtro de partículas
-	pf.writeposicion("/home/rafael/catkin_ws/Datos/errormejorparticula.csv", posicionrealrobotx, posicionrealroboty, posicionrealrobottheta, posicionx,posiciony,posiciontheta,best_particle.x,best_particle.y,best_particle.theta);
+	pf.writeposicion("/home/rafael/catkin_ws/Datos/errormejorparticula.csv", posicionrealrobotx, posicionrealroboty, posicionrealrobottheta, errorenx,erroreny,errorentheta,best_particle.x,best_particle.y,best_particle.theta);
 
 	particula.position.x=best_particle.x;
 	particula.position.y=best_particle.y;
@@ -253,9 +241,6 @@ void ParticleFilter::updateWeights() {
 	out_msg.encoding = sensor_msgs::image_encodings::RGB8; // Añadimos el tipo de encoding
 	out_msg.image    = imagenmejorparticula; // Añadimos la matriz
 	pubmapeo.publish(out_msg.toImageMsg());
-
-	ROS_INFO("\nPosición mejor particula x: %f, y: %f\nPeso mejor particula : %f\n",best_particle.x,best_particle.y,best_particle.weight);
-
 }
 //Método resample wheel
 void ParticleFilter::resample() {
@@ -263,7 +248,6 @@ void ParticleFilter::resample() {
     std::vector<Particle> resampled_particles;
     //Elegimos un indice aleatoriamente
     int indice=rand()%num_particles;
-    //ROS_INFO("Indice inicial: %d", indice);
     //Calculamos una beta que será la encargada de elegir que particulas irán a nuestro conjunto de particulas
     float beta=0;
     //Beta irá incrementando su valor un número aleatorio entre 0 y el doble del peso máximo de las particulas
@@ -278,7 +262,6 @@ void ParticleFilter::resample() {
     for (int i = 0; i < num_particles; i++){
 	//Incrementamos beta
 	beta=(float)((rand())/(float)RAND_MAX)*(pesomaximo*2);
-	 //ROS_INFO("Beta: %f", beta);
 	//Si beta es menor que el peso de la particula cuyo indice fue seleccionado
 	//Si no es menor se tomara el peso de diferencia y se comparará con la siguiente partícula comprobándose de nuevo si el peso de diferencia es mayor que el peso de la partícula siguiente
 	while(beta>weights[indice]){
@@ -289,7 +272,6 @@ void ParticleFilter::resample() {
 	}
 	//Se coge dicha particula para el conjunto de particulas
 	resampled_particles.push_back(particles[indice]);
-	//ROS_INFO("Indice elegido: %d", indice);
     }
     //Se sustituye el conjunto de particulas por el resampled
     particles = resampled_particles;
@@ -353,18 +335,16 @@ void general(){
 		//Inicializamos el filtro de particulas con la posición global del robot  más un pequeño error generado aleatoriamente n_x,z,theta.
 
 		float startinit=clock();
-		pf.init(posicionx + n_x, posiciony + n_y, posiciontheta + n_theta, sigma_pos);
+		pf.init(posicionrealrobotx + n_x, posicionrealroboty + n_y, posicionrealrobottheta + n_theta, sigma_pos);
 		float stopinit=clock();
-		ROS_INFO("\nTiempo que se tarda en realizar la inicializacion de particulas: %f\n",(stopinit-startinit)/double (CLOCKS_PER_SEC));
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoinicializacion.csv",(stopinit-startinit)/double (CLOCKS_PER_SEC)); 
 	
 	}
 	else{
 		// Se predice la posición del vehiculo en el proximo instante de tiempo. Pasandole el tiempo que pasará hasta la proxima medida, los posibles errores, la velocidad lineal y angular que tenian en el anterior instante
 		float startprediction=clock();
-		pf.prediction(posicionx-posicionanteriorx,posiciony-posicionanteriory,posiciontheta-posicionanteriortheta, ruidoparticulas);
+		pf.prediction(posicionrealrobotx+errorenx-posicionanteriorx,posicionrealroboty+erroreny-posicionanteriory,posicionrealrobottheta+errorentheta-posicionanteriortheta, ruidoparticulas);
 		float stopprediction=clock();
-		ROS_INFO("\nTiempo que se tarda en realizar la prediccion de particulas: %f\n",(stopprediction-startprediction)/double (CLOCKS_PER_SEC)); 
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoprediccion.csv",(stopprediction-startprediction)/double (CLOCKS_PER_SEC)); 
 	
 	}
@@ -381,9 +361,9 @@ void general(){
 	
 	for (int i=0;i<pf.particles.size();i++){
 		//Almacenamos el error
-		errorconjuntox+=abs(posicionx-pf.particles[i].x);
-		errorconjuntoy+=abs(posiciony-pf.particles[i].y);
-		errorconjuntotheta+=fmod(abs(posiciontheta-pf.particles[i].theta),M_PI);
+		errorconjuntox+=abs(posicionrealrobotx-pf.particles[i].x);
+		errorconjuntoy+=abs(posicionrealroboty-pf.particles[i].y);
+		errorconjuntotheta+=fmod(abs(posicionrealrobottheta-pf.particles[i].theta),M_PI);
 		
 		//Almacenamos en el topic las particulas
 	 	particula.position.x=pf.particles[i].x;
@@ -409,41 +389,16 @@ void general(){
 	float startactualizacionpesos=clock();
 	pf.updateWeights();
 	float stopactualizacionpesos=clock();
-	ROS_INFO("\nTiempo que se tarda en realizar la actualizacion de pesos: %f\n",(stopactualizacionpesos-startactualizacionpesos)/double (CLOCKS_PER_SEC));
 	pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoactualizacionpesos.csv",(stopactualizacionpesos-startactualizacionpesos)/double (CLOCKS_PER_SEC));
 	
 	float startresample=clock();
 	pf.resample();
 	float stopresample=clock();
-	ROS_INFO("\nTiempo que se tarda en realizar el resample: %f\n",(stopresample-startresample)/double (CLOCKS_PER_SEC));
 	pf.writetiempo("/home/rafael/catkin_ws/Datos/tiemporesample.csv",(stopresample-startresample)/double (CLOCKS_PER_SEC) );
-	/*
-	//Publicamos las particulas elegidas del resample
-	geometry_msgs::PoseArray particulas;
-	geometry_msgs::Pose particula;
-	particulas.header.frame_id = "map";
-    particulas.header.stamp = ros::Time::now();
-	
-	for (int i=0;i<pf.particles.size();i++){		
-		//Almacenamos en el topic las particulas
-	 	particula.position.x=pf.particles[i].x;
-	 	particula.position.y=pf.particles[i].y;
-	 	particula.position.z=0;
-		tf2::Quaternion myQuaternion;
-		myQuaternion.setRPY( 0, 0, pf.particles[i].theta ); 
-		particula.orientation.x=myQuaternion[0];
-		particula.orientation.y=myQuaternion[1];
-		particula.orientation.z=myQuaternion[2];
-		particula.orientation.w=myQuaternion[3];
-	 	particulas.poses.push_back(particula);
-
-	}
-	pubparticulas.publish(particulas); 
-	*/
 	//Almacenamos las posiciones anteriores
-	posicionanteriorx=posicionx;
-	posicionanteriory=posiciony;
-	posicionanteriortheta=posiciontheta;
+	posicionanteriorx=errorenx+posicionrealrobotx;
+	posicionanteriory=erroreny+posicionrealroboty;
+	posicionanteriortheta=posicionrealrobottheta+errorentheta;
 }
 
 //Main de el filtro de particulas que se encarga de inicializar los publishers y suscribirse a los diferentes topics
@@ -475,8 +430,8 @@ int main(int argc, char **argv){
 	pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/home/rafael/catkin_ws/src/particle_filter/pcd/mapeado04.pcd", *cloud);
 	
 	//Obtenemos la posicion del robot dada por la odometria
-	//subscriberodom = n.subscribe("odometriafalsa",1,callbackobtenerPosicionyVelocidad);
-	subscriberodom = n.subscribe("odometriafalsa",1,callbackobtenerPosicionyVelocidad);
+	//subscriberodom = n.subscribe("odometriafalsa",1,callbackobtenererrorenyVelocidad);
+	subscriberodom = n.subscribe("odometriafalsa",1,callbackobtenererrorenodom);
 
 	//Obtenemos la posición real del robot	
 	subscribeposreal = n.subscribe("odom",1,callbackPosicionReal);
@@ -489,9 +444,6 @@ int main(int argc, char **argv){
 	remove("/home/rafael/catkin_ws/Datos/errorconjunto.csv");
 	//Con esto no hay paralelismo
 	ros::spin();
-	//Con esto hay paralelismo
-	//ros::MultiThreadedSpinner spinner(2);
-	//spinner.spin();
 	return 0;
 }
 
@@ -517,27 +469,18 @@ void callbackPosicionReal (const nav_msgs::Odometry input){
 }
 
 //Callback que obtiene la posición actual del robot según la odometria
-void callbackobtenerPosicionyVelocidad (const nav_msgs::Odometry input){
+void callbackobtenererrorenodom (const nav_msgs::Odometry input){
 	//UN nuevo reloj para comprobar cuanto tarda para llegar a la proxima iteracción y calcular delta
 	start2 = clock();
 	//Almacenamos la posición del robot dada por la odometria
-	posicionx=input.pose.pose.position.x;
-	posiciony=input.pose.pose.position.y;
-	posiciontheta=tf::getYaw(input.pose.pose.orientation);
-
-	//ROS_INFO("LLega odometry"); 
+	errorenx=input.pose.pose.position.x;
+	erroreny=input.pose.pose.position.y;
+	errorentheta=tf::getYaw(input.pose.pose.orientation);
 	
 	//Solo realizamos el proceso si se ha leido la nube del sensor
 	if(nubesensorleida){
 		nubesensorleida=false;
 		general();
-
-		//Calculamos el valor de delta
-		stop2 = clock();
-		double runtime2 = (stop2 - start2) / double(CLOCKS_PER_SEC);
-		cout << "Runtime delta (sec): " << runtime2 << endl;
-		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoiteracion.csv", runtime2);
-
 	}
 
 }
@@ -548,8 +491,8 @@ void obtenerImagenSensor(cv::Mat &imagen){
 
 	//Recortamos la parte sobrante de la nube de puntos
 	pcl::CropBox<pcl::PointXYZRGB> boxFilter;
-	boxFilter.setMin(Eigen::Vector4f(-3, -1, 1, 1.0));
-	boxFilter.setMax(Eigen::Vector4f(3,1, 5, 1.0));
+	boxFilter.setMin(Eigen::Vector4f(-3, 0, 1, 1.0));
+	boxFilter.setMax(Eigen::Vector4f(3,0.8, 5, 1.0));
 	boxFilter.setInputCloud(nubesensor);
 	boxFilter.filter(*bodyFiltered);
 
@@ -615,66 +558,26 @@ void obtenerImagenParticula(float x, float y, float angle, cv::Mat &imagen){
 	//Ahora pasaremos a proyectar esta nube de puntos en una imagen
 
 	//Utilizamos CV_8UC3 Definiendo que el color utiliza un uint_8 y se usan 3 canales para pintar la imagen. Scalar indica el valor por defecto de toda la imágen
-	//cv::Mat imagen(60,90, CV_8UC3, cv::Scalar(0, 0,0));
 	//Proyectamos la nube de puntos en la imagen recorriendo todos los puntos de la nube
 	//#pragma omp parallel for
 	for(int i=0;i<nubeparticula->size();i++){	
 		cv::Vec3b color;
 		//Obtenemos el color del pixel que tendría el punto en la nube de puntos
 		color[0]=nubeparticula->points[i].r;color[1]=nubeparticula->points[i].g;color[2]=nubeparticula->points[i].b;
-		//Almacenamos el color en la matriz, multiplicamos *25 para cambiar la escala
+		//Almacenamos el color en la matriz, multiplicamos *15 para cambiar la escala
 		imagen.at<cv::Vec3b>((int)(nubeparticula->points[i].x*15),89+(int)(nubeparticula->points[i].y*15)) = color;
-		//imagen.at<cv::Vec3b>((int)(nubeparticula->points[i].x*15),-(int)(nubeparticula->points[i].y*15)) = color;
-		//ARREGLAR
 	}
-	ROS_INFO("Borrar IMAGENOBTENIDA");
 	//Una vez que tenemos la matriz con la imagen la devolvemos.
 	//return imagen;
 }
 //Método para calcular el peso de la particula mediante el registrado de imágenes ORB
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
-	// Convert images to gray scale;
+	// Convertimos las imagenes a escala de gris
 	cv::Mat im1Gray, im2Gray;
-	//cv::cvtColor(imagenparticula, im1Gray, CV_BGR2GRAY);
-	//cv::cvtColor(imagenparticula, im2Gray, CV_BGR2GRAY);
-	//ROS_INFO("particula columnas %d filas %d", imagenparticula.cols, imagenparticula.rows); 
-	//ROS_INFO("sensor columnas %d filas %d", imagensensor.cols, imagensensor.rows); 
 	cv::cvtColor(imagensensor, im1Gray, CV_RGB2GRAY);
 	cv::cvtColor(imagenparticula, im2Gray, CV_RGB2GRAY);
-	/* 	INtento 1
-	// Define the motion model
-	const int warp_mode = cv::MOTION_EUCLIDEAN;
-	 
-	// Set a 2x3 or 3x3 warp matrix depending on the motion model.
-	cv::Mat warp_matrix;
-	
-	// Initialize the matrix to identity
-	if ( warp_mode == cv::MOTION_HOMOGRAPHY )
-		warp_matrix = cv::Mat::eye(3, 3, CV_32F);
-	else
-		warp_matrix = cv::Mat::eye(2, 3, CV_32F);
-	
-	// Specify the number of iterations.
-	int number_of_iterations = 5000;
-	
-	// Specify the threshold of the increment
-	// in the correlation coefficient between two iterations
-	double termination_eps = 1e-10;
-	
-	// Define termination criteria
-	cv::TermCriteria criteria (cv::TermCriteria::COUNT+cv::TermCriteria::EPS, number_of_iterations, termination_eps);
-	
-	// Run the ECC algorithm. The results are stored in warp_matrix.
-	cv::findTransformECC(
-					im1_gray,
-					im2_gray,
-					warp_matrix,
-					warp_mode,
-					criteria
-				);
-	ROS_INFO("Traslacción x %d ",warp_matrix.at<int>(0,2)); */
- 
-	//Intento 2
+	//Indicamos el número máximo de caraceristicas
+	//Declaramos el porcentaje para que sea un buen matching
 	const int MAX_FEATURES = 500;
 	const float GOOD_MATCH_PERCENT = 0.20f;
 	Mat im1Reg, h;
@@ -686,16 +589,12 @@ float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
   Ptr<Feature2D> orb = ORB::create(MAX_FEATURES);
   orb->detectAndCompute(im1Gray, Mat(), keypoints1, descriptors1);
   orb->detectAndCompute(im2Gray, Mat(), keypoints2, descriptors2);
-
-  //ROS_INFO("Keypoints1: %d, Keypoints2: %d", keypoints1.size(), keypoints2.size()); 
   if (!keypoints1.empty() && !keypoints2.empty()) {
 	// Match features.
 	std::vector<DMatch> matches;
 	
 	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
-	//ROS_INFO("INICIO MATCHER"); 
 	matcher->match(descriptors1, descriptors2, matches, Mat());
-	//ROS_INFO("FIN MATCHER");  
 	// Sort matches by score
 	std::sort(matches.begin(), matches.end());
 	
@@ -795,91 +694,15 @@ float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
 			valor=valor+matrizcomparacion[i*numerosubimagenes+j];
 		}
 	}
-	
-	ROS_INFO("Coincidencia PREFORMULA: %f", valor);
-	
-	return  pow(3, 3/(valor/100));//Formula para 2x2
-	return -5*valor+5000;
-	//return pow(3,(1/(valor/100)));
+	//valor=-5*valor+250000;
+	//if(valor<0)valor=0;
+	//return  pow(3, 3/(valor/100));//Formula para 2x2
+	//return valor;
+	return pow(3,(1/(valor/100)));
 	//return  pow(3, 3/(valor/1000));//Formula para 4x4
 
 	
 }
-
-/* 
-//Obtener el peso de las particulas basandonos en el histograma
-float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
-	//Definimos el número de subimagenes que vamos a realizar por fila o columna
-	int numerosubimagenes=2; //Tendriamos numerosubimagenes*numerosubimagenes =100
-	//Creamos un vector que definirá la distancia entre las subimagenes de imagen sensor e imagen particula
-	float matrizcomparacion[numerosubimagenes*numerosubimagenes];
-	//Definimos la altura y anchura de las submatrices
-
-	int anchuraaprovechable=1*(imagensensor.cols/6);// 15
-	int anchuranoaprovechable=2.5*(imagensensor.cols/6); // 37.5=37
-	int anchura=anchuraaprovechable/numerosubimagenes; //7.5=7
-	int altura=imagensensor.rows/numerosubimagenes; //30
-
-	//Creamos variables para almacenar los valores RGB
-	float valormedioR=0;
-	float valormedioG=0;
-	float valormedioB=0;
-
-	//Recorremos las subimágenes
-	for(int i=0;i<numerosubimagenes;i++){
-		for(int j=0;j<numerosubimagenes;j++){
-			//Declaramos una variable para almacenar el valor acumulado de cada uno de los canales, BGR para imagensensor
-			float valor[3]={0,0,0};
-			//Calculamos el valor acumulado en cada canal de la imagensensor
-			for(int h=altura*i;h<altura*(i+1);h++){
-				for(int w=anchuranoaprovechable+anchura*j;w<anchuranoaprovechable+anchura*(j+1);w++){
-					valor[0]=valor[0]+(int)imagensensor.at<Vec3b>(h,w)[0]; //B
-					valor[1]=valor[1]+(int)imagensensor.at<Vec3b>(h,w)[1]; //G
-					valor[2]=valor[2]+(int)imagensensor.at<Vec3b>(h,w)[2]; //R
-				}
-			}
-			//Hacemos la media de los valores de cada canal de la imagen sensor
-			valor[0]=valor[0]/(anchura*altura);
-			valor[1]=valor[1]/(anchura*altura);
-			valor[2]=valor[2]/(anchura*altura);
-
-			//Declaramos una variable para almacenar el valor acumulado de cada uno de los canales, BGR para imagenparticula
-			float valorparticula[3]={0,0,0};
-			//Calculamos el valor acumulado en cada canal de la imagenparticula
-			for(int h=altura*i;h<altura*(i+1);h++){
-				for(int w=anchuranoaprovechable+anchura*j;w<anchuranoaprovechable+anchura*(j+1);w++){
-					valorparticula[0]=valorparticula[0]+(int)imagenparticula.at<Vec3b>(h,w)[0]; //B
-					valorparticula[1]=valorparticula[1]+(int)imagenparticula.at<Vec3b>(h,w)[1]; //G
-					valorparticula[2]=valorparticula[2]+(int)imagenparticula.at<Vec3b>(h,w)[2]; //R
-				}
-			}
-			//Hacemos la media de los valores de cada canal de la imagen sensor
-			valorparticula[0]=valorparticula[0]/(anchura*altura);
-			valorparticula[1]=valorparticula[1]/(anchura*altura);
-			valorparticula[2]=valorparticula[2]/(anchura*altura);
-
-			//Realizamos la resta para calcular la distancia entre los dos valores medios
-			matrizcomparacion[i*numerosubimagenes+j]=abs(valorparticula[0]-valor[0])+abs(valorparticula[1]-valor[1])+abs(valorparticula[2]-valor[2]);
-		}
-	}
-
-	//ROS_INFO("matrizcomparación: \n Subimagen 0: %f \n Subimagen 1: %f \n Subimagen 2: %f \n Subimagen 3: %f", matrizcomparacion[0], matrizcomparacion[1], matrizcomparacion[2], matrizcomparacion[3]);
-	
-	// 
-	float valor=0;
-	for(int i=0;i<numerosubimagenes;i++){
-		for(int j=0;j<numerosubimagenes;j++){
-			valor=valor+matrizcomparacion[i*numerosubimagenes+j];
-		}
-	}
-	
-	ROS_INFO("Coincidencia PREFORMULA: %f", valor);
-	
-	return  pow(3, 1/(valor/100));//1/valor;//pow(2,1/valor);
-	
-}
-*/
-
 
 //Comprimir todo Cntrl + K seguido de Cntrol+0.
 //Descomprimir todo Cntrl + K seguido de Cntrol+J.
