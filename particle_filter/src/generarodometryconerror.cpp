@@ -14,14 +14,19 @@ float errortotaltheta=0;
 //float erroralmoverse=0.000155; //erroralmoverse*65=error por segundo=0.01 m/s de desviación
 //float erroralrotar=0.000769; //Erroralrotar*65=erroranguloporsegundo=0.05 radianes/s=3º/s
 
-float erroralmoverse=0.001;//0.1 m/s
-float erroralrotar=0.000769; //6º/s
-
+float errorminimoalmoverse=0.001;//0.06 m/s
+float errorminimoalrotar=0.000769; //3º/s
+float erroralmoverse=0;
+float erroralrotar=0;
+float errormaximoalmoverse=0.002;// 0.13 m/s
+float errormaximoalrotar=0.00268461538; //6º/s
 //Objeto que almacena la odometria modificada
 nav_msgs::Odometry odometriafalsa;
 bool primeravez=true;
 void callbackOdom (const nav_msgs::Odometry input){
- 	errortotaltheta=0;
+	erroralrotar = (rand() % (int)(errormaximoalrotar*1000000-errorminimoalrotar*1000000)+errorminimoalrotar*1000000)/1000000;
+ 	erroralmoverse = (rand() % (int)(errormaximoalmoverse*1000-errorminimoalmoverse*1000)+errorminimoalmoverse*1000)/1000;
+	errortotaltheta=0;
 	errortotalx=0;
 	errortotaly=0;
 	//La primera vez que sea llamado obtendrá la posición real del robot

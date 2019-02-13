@@ -7,7 +7,6 @@
 #ifndef PARTICLE_FILTER_H_
 #define PARTICLE_FILTER_H_
 
-#include "helper_functions.h"
 
 
 #include "nav_msgs/Odometry.h"
@@ -24,7 +23,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
-//NUEVOS INCLUDES
+
 #include <ros/ros.h>
 #include "opencv2/imgcodecs/imgcodecs.hpp"
 #include <image_transport/image_transport.h>

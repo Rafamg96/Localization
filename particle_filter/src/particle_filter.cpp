@@ -115,8 +115,6 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 		double geny=dist_y(gen);
 		double gentheta=dist_theta(gen);
 
-		//1ROS_INFO("\n Particula %d \nValores ruidoparticula_x %f , ruidoparticula_y : %f , ruidoparticula_theta : %f\n",i,genx,geny,gentheta);
-
         Particle p;
         p.id = i;
         p.x = genx+x; 
@@ -177,10 +175,9 @@ void ParticleFilter::updateWeights() {
 		float stopobtenerimagenparticula=clock();
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoimagenparticula.csv",(stopobtenerimagenparticula-startobtenerimagenparticula)/double (CLOCKS_PER_SEC));
 	
-		//Calculamos cual es el peso correspondiente a la particula
-		//Tiempo que tarda en calcular el peso de la imagen
-		//coincidencia=registrarImagen(imagensensor,imagenparticula);
+		//Tiempo que tarda en calcular el peso de la imagen	
 		float startcalcularcoincidencia=clock();
+		//Calculamos cual es el peso correspondiente a la particula
 		coincidencia=histogramaImagen(imagensensor,imagenparticula);
 		float stopcalcularcoincidencia=clock();
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempocoincidenciaparticula.csv",(stopcalcularcoincidencia-startcalcularcoincidencia)/double (CLOCKS_PER_SEC));
@@ -231,7 +228,6 @@ void ParticleFilter::updateWeights() {
     pubmejorparticula.publish(particulas);
 
 	//Obtenemos la imagen que ve la mejor particula para publicarla
-	//cv::Mat imagenmejorparticula=obtenerImagenParticula(nubemapeo,best_particle.x,best_particle.y,best_particle.theta);
 	cv::Mat imagenmejorparticula(60,90, CV_8UC3, cv::Scalar(0, 0,0));
 	obtenerImagenParticula(best_particle.x,best_particle.y,best_particle.theta, imagenmejorparticula);
 
@@ -323,8 +319,6 @@ void general(){
 
 	// Inicializamos el filtro de particulas, en el caso de que sea la primera iteración.
 	if (!pf.initialized()) {
-	//Para probar como te sigue correctamente la particula
-	//if (1) {
 		//Generamos un aleatorio de la distribución N_x_init
 		n_x = N_x_init(gen);
 		//Generamos un aleatorio de la distribución N_y_init
@@ -338,7 +332,6 @@ void general(){
 		pf.init(posicionrealrobotx + n_x, posicionrealroboty + n_y, posicionrealrobottheta + n_theta, sigma_pos);
 		float stopinit=clock();
 		pf.writetiempo("/home/rafael/catkin_ws/Datos/tiempoinicializacion.csv",(stopinit-startinit)/double (CLOCKS_PER_SEC)); 
-	
 	}
 	else{
 		// Se predice la posición del vehiculo en el proximo instante de tiempo. Pasandole el tiempo que pasará hasta la proxima medida, los posibles errores, la velocidad lineal y angular que tenian en el anterior instante
@@ -470,7 +463,7 @@ void callbackPosicionReal (const nav_msgs::Odometry input){
 
 //Callback que obtiene la posición actual del robot según la odometria
 void callbackobtenererrorenodom (const nav_msgs::Odometry input){
-	//UN nuevo reloj para comprobar cuanto tarda para llegar a la proxima iteracción y calcular delta
+	//Reloj para comprobar cuanto tarda para llegar a la proxima iteracción y calcular delta
 	start2 = clock();
 	//Almacenamos la posición del robot dada por la odometria
 	errorenx=input.pose.pose.position.x;
@@ -517,7 +510,6 @@ void obtenerImagenSensor(cv::Mat &imagen){
 	pubsensor.publish(out_msg.toImageMsg());
 }
 //Proyecta la nube dye puntos que vería la particula en la posición x y con ángulo theta en una matriz y la devuelve
-//cv::Mat obtenerImagenParticula(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr in_nubemapeo,float x, float y, float angle){
 void obtenerImagenParticula(float x, float y, float angle, cv::Mat &imagen){
 	//Para no realizar transformaciones a toda la nube de puntos nos quedamos con una zona que rode a la posición del robot 5 m por cada lado ya que es lo máximo que ve en profundidad
 	//Recortamos la parte sobrante de la nube de puntos y la almacenamos en bodyFiltered
@@ -567,8 +559,6 @@ void obtenerImagenParticula(float x, float y, float angle, cv::Mat &imagen){
 		//Almacenamos el color en la matriz, multiplicamos *15 para cambiar la escala
 		imagen.at<cv::Vec3b>((int)(nubeparticula->points[i].x*15),89+(int)(nubeparticula->points[i].y*15)) = color;
 	}
-	//Una vez que tenemos la matriz con la imagen la devolvemos.
-	//return imagen;
 }
 //Método para calcular el peso de la particula mediante el registrado de imágenes ORB
 float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
@@ -607,26 +597,6 @@ float registrarImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
 	Mat imMatches;
 	drawMatches(imagensensor, keypoints1, imagenparticula, keypoints2, matches, imMatches);
 	imwrite("/home/rafael/matches.jpg", imMatches);
-	//ROS_INFO("Imagen publicada"); 
-	/*
-	// Extract location of good matches
-	std::vector<Point2f> points1, points2;
-	
-	for( size_t i = 0; i < matches.size(); i++ )
-	{
-		points1.push_back( keypoints1[ matches[i].queryIdx ].pt );
-		points2.push_back( keypoints2[ matches[i].trainIdx ].pt );
-	}
-	
-	// Find homography
-	h = findHomography( points1, points2, RANSAC ); 
-	
-	// Use homography to warp image
-	warpPerspective(imagensensor, im1Reg, h, imagenparticula.size());
-	
-	ROS_INFO("Matriz obtenida [%f,%f,%f,%f,%f,%f,%f,%f,%f] ",h.at<double>(0,0),h.at<double>(0,1),h.at<double>(0,2),h.at<double>(1,0),h.at<double>(1,1),h.at<double>(1,2),h.at<double>(2,0),h.at<double>(2,1),h.at<double>(2,2)); 
-	imwrite("/home/rafael/matches2.jpg", im1Reg );  
-	*/
 	return 1;
   }
   
@@ -686,21 +656,15 @@ float histogramaImagen(cv::Mat imagensensor,cv::Mat imagenparticula){
 		}
 	}
 
-	//ROS_INFO("matrizcomparación: \n Subimagen 0: %f \n Subimagen 1: %f \n Subimagen 2: %f \n Subimagen 3: %f", matrizcomparacion[0], matrizcomparacion[1], matrizcomparacion[2], matrizcomparacion[3]);
-	// 
+	//Calculamos la distancia entre las imágenes
 	float valor=0;
 	for(int i=0;i<numerosubimagenes;i++){
 		for(int j=0;j<numerosubimagenes;j++){
 			valor=valor+matrizcomparacion[i*numerosubimagenes+j];
 		}
 	}
-	//valor=-5*valor+250000;
-	//if(valor<0)valor=0;
-	//return  pow(3, 3/(valor/100));//Formula para 2x2
-	//return valor;
+	//Aplicamos la función a la distancia entre las imágenes para obtener el peso de la partícula
 	return pow(3,(1/(valor/100)));
-	//return  pow(3, 3/(valor/1000));//Formula para 4x4
-
 	
 }
 
